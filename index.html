@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather</title>
+  <link rel="icon" href="icon.png" type="image/png">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background-color: #3399cc; /* Light gray background */
+      color: #333; /* Dark text color */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .app-wrap {
+      display: flex;
+      flex-direction: column;
+      background: #fff; /* White background for the app */
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      width: 90%;
+      max-width: 400px; /* Set a max width */
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap; /* Allow wrapping on smaller screens */
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    header input {
+      flex: 1 1 70%; /* Allow input to grow and shrink */
+      padding: 10px 15px;
+      height: 40px; /* Fixed height */
+      border: 1px solid #ccc;
+      border-radius: 0px 0px 0px 0px; /* Round only left corners */
+      font-size: 16px;
+      transition: border-color 0.3s ease;
+    }
+
+    header input::placeholder {
+      color: #aaa;
+    }
+
+    header input:focus {
+      border-color: #007BFF; /* Highlight border on focus */
+      outline: none;
+    }
+
+    header button {
+      flex: 0 0 auto; /* Fixed size for button */
+      height: 40px; /* Match the height of the input */
+      padding: 10px 15px;
+      background-color: #007BFF; /* Blue background for button */
+      color: #fff; /* White text color */
+      border: none;
+      border-radius: 0px 0px 0px 0px; /* Round only right corners */
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    header button:hover {
+      background-color: #0056b3; /* Darker blue on hover */
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .location .city {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    .location .date {
+      font-size: 14px;
+      font-weight: 400;
+      color: #666; /* Darker gray for date */
+    }
+
+    .current .temp {
+      font-size: 72px;
+      font-weight: 900;
+      margin: 20px 0;
+    }
+
+    .current .temp span {
+      font-size: 30px;
+    }
+
+    .current .weather {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .current .hi-low {
+      font-size: 16px;
+      font-weight: 500;
+      color: #888; /* Light gray for hi-low */
+    }
+
+    .loading {
+      display: none;
+      font-size: 18px;
+      color: #007BFF;
+      text-align: center;
+      margin: 10px 0;
+    }
+
+    @media (max-width: 600px) {
+      header input {
+        flex: 1 1 100%; /* Full width on small screens */
+        margin-bottom: 10px; /* Space between input and button */
+      }
+      
+      header button {
+        width: 100%; /* Full width button on small screens */
+      }
+
+      .location .city {
+        font-size: 20px;
+      }
+
+      .current .temp {
+        font-size: 60px;
+      }
+
+      .current .weather {
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-wrap">
+    <header>
+      <input type="text" autocomplete="off" class="search-box" placeholder="Search for a city..." />
+      <button class="search-button">Search</button>
+    </header>
+    <main>
+      <section class="location">
+        <div class="city">Jalgaon, IN</div>
+        <div class="date">Wednesday 19 October 2022</div>
+      </section>
+      <div class="current">
+        <div class="temp">31<span>°C</span></div>
+        <div class="weather">Clouds</div>
+        <div class="hi-low">31°c / 31°c</div>
+      </div>
+      <div class="loading">Loading...</div>
+    </main>
+  </div>
+  <script>
+    const api = {
+      key: "fcc8de7015bbb202209bbf0261babf4c",
+      base: "https://api.openweathermap.org/data/2.5/"
+    }
+
+    const searchbox = document.querySelector('.search-box');
+    const searchButton = document.querySelector('.search-button');
+    const loadingIndicator = document.querySelector('.loading');
+
+    searchbox.addEventListener('keypress', setQuery);
+    searchButton.addEventListener('click', () => {
+      getResults(searchbox.value);
+    });
+
+    function setQuery(evt) {
+      if (evt.keyCode === 13) {
+        getResults(searchbox.value);
+      }
+    }
+
+    function getResults(query) {
+      loadingIndicator.style.display = 'block';
+      
+      fetch(`${api.base}weather?q=${query}&units=metric&APPID=${api.key}`)
+        .then(response => {
+          loadingIndicator.style.display = 'none';
+          if (!response.ok) {
+            throw new Error('City not found');
+          }
+          return response.json();
+        })
+        .then(displayResults)
+        .catch(error => {
+          loadingIndicator.style.display = 'none';
+          alert(error.message);
+        });
+    }
+
+    function displayResults(weather) {
+      let city = document.querySelector('.location .city');
+      city.innerText = `${weather.name}, ${weather.sys.country}`;
+
+      let now = new Date();
+      let date = document.querySelector('.location .date');
+      date.innerText = dateBuilder(now);
+
+      let temp = document.querySelector('.current .temp');
+      temp.innerHTML = `${Math.round(weather.main.temp)}<span>°C</span>`;
+
+      let weather_el = document.querySelector('.current .weather');
+      weather_el.innerText = weather.weather[0].main;
+
+      let hilow = document.querySelector('.hi-low');
+      hilow.innerText = `${Math.round(weather.main.temp_min)}°C / ${Math.round(weather.main.temp_max)}°C`;
+    }
+
+    function dateBuilder(d) {
+      const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+      const day = days[d.getDay()];
+      const date = d.getDate();
+      const month = months[d.getMonth()];
+      const year = d.getFullYear();
+
+      return `${day} ${date} ${month} ${year}`;
+    }
+  </script>
+</body>
+</html>
